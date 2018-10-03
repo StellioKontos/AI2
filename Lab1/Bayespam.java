@@ -15,8 +15,8 @@ public class Bayespam
         int counter_spam    = 0;
         int counter_regular = 0;
 
-		double probGivenRegular;	//stores the conditional probabilities of the word
-		double probGivenSpam;
+		double logProbGivenRegular;	//stores the conditional probabilities of the word
+		double logProbGivenSpam;
 
         // Increase one of the counters by one
         public void incrementCounter(MessageType type)
@@ -201,15 +201,15 @@ public class Bayespam
             word = e.nextElement();
             counter  = vocab.get(word);
 
-			counter.probGivenRegular = (double)counter.counter_regular / nWordsRegular;
-			counter.probGivenSpam = (double)counter.counter_spam / nWordsSpam;
+			counter.logProbGivenRegular = Math.log((double)counter.counter_regular / nWordsRegular);
+			counter.logProbGivenSpam = Math.log((double)counter.counter_spam / nWordsSpam);
 
 			///Set zero probabilities to default minimum probability
-			if(counter.probGivenRegular == 0) {
-				counter.probGivenRegular = epsilon / (nWordsRegular + nWordsSpam);
+			if(counter.logProbGivenRegular == 0) {
+				counter.logProbGivenRegular = Math.log(epsilon / (nWordsRegular + nWordsSpam));
 			}
-			if(counter.probGivenSpam == 0) {
-				counter.probGivenRegular = epsilon = (nWordsRegular + nWordsSpam);
+			if(counter.logProbGivenSpam == 0) {
+				counter.logProbGivenRegular = Math.log(epsilon / (nWordsRegular + nWordsSpam));
 			}
         }
 	}
@@ -242,11 +242,11 @@ public class Bayespam
         double nMessagesSpam = listing_spam.length;
         double nMessagesTotal = nMessagesRegular + nMessagesSpam;
 
-        double priorRegular = nMessagesRegular / nMessagesTotal;
-        double priorSpam = nMessagesSpam / nMessagesTotal;
+        double logPriorRegular = Math.log(nMessagesRegular / nMessagesTotal);
+        double logPriorSpam = Math.log(nMessagesSpam / nMessagesTotal);
 
-        System.out.println(priorRegular);
-        System.out.println(priorSpam);
+        System.out.println(logPriorRegular);
+        System.out.println(logPriorSpam);
 
 		///calculate class conditional probabilities
 		computeCCProbs();
