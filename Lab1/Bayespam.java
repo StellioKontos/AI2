@@ -35,8 +35,17 @@ public class Bayespam
 
     //check if word passes filter
     private static String cleanWord(String word) {
-        
-        return word;
+        String finalWord = "";
+        for(int i = 0; i<word.length(); i++) {
+            char c = word.charAt(i);
+            if(Character.isUpperCase(c)) {
+                c = Character.toLowerCase(c);
+            }
+            if(Character.isLetter(c)) {
+                finalWord += c;
+            }
+        }
+        return finalWord;
     }
     
     // Add a word to the vocabulary
