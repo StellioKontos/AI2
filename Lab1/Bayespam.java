@@ -24,6 +24,15 @@ public class Bayespam
                 ++counter_spam;
             }
         }
+        // Get counter value
+        public int getCount(MessageType type) {
+            if ( type == MessageType.NORMAL ) {
+                return counter_regular;
+            }
+            else {
+                return counter_spam;
+            }
+        }
     }
 
     // Listings of the two subdirectories (regular/ and spam/)
@@ -114,6 +123,7 @@ public class Bayespam
             messages = listing_spam;
         }
         
+        
         for (int i = 0; i < messages.length; ++i)
         {
             FileInputStream i_s = new FileInputStream( messages[i] );
@@ -157,6 +167,17 @@ public class Bayespam
 
         // Print out the hash table
         printVocab();
+
+        //calculates the prior probabilities
+        double nMessagesRegular = listing_regular.length;
+        double nMessagesSpam = listing_spam.length;
+        double nMessagesTotal = nMessagesRegular + nMessagesSpam;
+
+        double priorRegular = nMessagesRegular / nMessagesTotal;
+        double priorSpam = nMessagesSpam / nMessagesTotal;
+
+        System.out.println(priorRegular);
+        System.out.println(priorSpam);
         
         // Now all students must continue from here:
         //
