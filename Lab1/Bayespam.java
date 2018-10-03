@@ -78,19 +78,43 @@ public class Bayespam
     // List the regular and spam messages
     private static void listDirs(File dir_location)
     {
-        // List all files in the directory passed
-        File[] dir_listing = dir_location.listFiles();
+ 	   // List all files in the directory passed
+    	File[] dir_listing = dir_location.listFiles();
+    	String folder_name; 
+    	Boolean spam_found = false, regular_found = false;
 
-        // Check that there are 2 subdirectories
-        if ( dir_listing.length != 2 )
-        {
-            System.out.println( "- Error: specified directory does not contain two subdirectories.\n" );
-            Runtime.getRuntime().exit(0);
-        }
+    	// Check that there are exactly 2 subdirectories
+    	if ( dir_listing.length != 2 )
+    	{
+    	    System.out.println( "- Error: the directory should contain exactly 2 subdirectories (named spam and regular).\n" );
+    	    Runtime.getRuntime().exit(0);
+    	}
+    
+    	// Loop through all subdirectories
+    	for (File f : dir_listing) {
+        	folder_name = f.toString();
+        	// If the folder_name ends in the word spam, store it as the spam folder
+        	if (folder_name.length() > 3 && folder_name.substring(folder_name.length() - 4).equals("spam")) {
+            	listing_spam = f.listFiles();
+            	spam_found = true;
+        	// If the folder_name ends in the word regular, store it as the regular folder
+        	} else if (folder_name.length() > 6 && folder_name.substring(folder_name.length() - 7).equals("regular")) {
+            	listing_regular = f.listFiles();
+            	regular_found = true;
+        	}
+        
+    	}
+    
+    	if (!spam_found) {
+        	System.out.println( "- Error: directory with spam messages not found. Make sure your input directory contains a folder named spam\n" );
+        	Runtime.getRuntime().exit(0);
+    	}
+    	if (!regular_found) {
+        	System.out.println( "- Error: directory with regular messages not found. Make sure your input directory contains a folder named regular\n" );
+        	Runtime.getRuntime().exit(0);
+    	}
+	}
 
-        listing_regular = dir_listing[0].listFiles();
-        listing_spam    = dir_listing[1].listFiles();
-    }
 
     
     // Print the current content of the vocabulary
