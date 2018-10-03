@@ -33,10 +33,19 @@ public class Bayespam
     // A hash table for the vocabulary (word searching is very fast in a hash table)
     private static Hashtable <String, Multiple_Counter> vocab = new Hashtable <String, Multiple_Counter> ();
 
+    //check if word passes filter
+    private static String cleanWord(String word) {
+        
+        return word;
+    }
     
     // Add a word to the vocabulary
     private static void addWord(String word, MessageType type)
     {
+        word = cleanWord(word);
+        if(word.length() < 4) {
+            return;
+        }
         Multiple_Counter counter = new Multiple_Counter();
 
         if ( vocab.containsKey(word) ){                  // if word exists already in the vocabulary..
@@ -152,3 +161,5 @@ public class Bayespam
         // 8) Improve the code and the performance (speed, accuracy)
         //
         // Use the same steps to create a class BigramBayespam which implements a classifier using a vocabulary consisting of bigrams
+    }
+}
