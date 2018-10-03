@@ -38,6 +38,9 @@ public class Bayespam
         }
     }
 
+	///parameter defines the default minimum probability
+	private static double epsilon = 1;
+
     // Listings of the two subdirectories (regular/ and spam/)
     private static File[] listing_regular = new File[0];
     private static File[] listing_spam = new File[0];
@@ -200,6 +203,14 @@ public class Bayespam
 
 			counter.probGivenRegular = (double)counter.counter_regular / nWordsRegular;
 			counter.probGivenSpam = (double)counter.counter_spam / nWordsSpam;
+
+			///Set zero probabilities to default minimum probability
+			if(counter.probGivenRegular == 0) {
+				counter.probGivenRegular = epsilon / (nWordsRegular + nWordsSpam);
+			}
+			if(counter.probGivenSpam == 0) {
+				counter.probGivenRegular = epsilon = (nWordsRegular + nWordsSpam);
+			}
         }
 	}
    
