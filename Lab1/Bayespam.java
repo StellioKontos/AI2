@@ -15,6 +15,9 @@ public class Bayespam
         int counter_spam    = 0;
         int counter_regular = 0;
 
+		double probGivenRegular;	//stores the conditional probabilities of the word
+		double probGivenSpam;
+
         // Increase one of the counters by one
         public void incrementCounter(MessageType type)
         {
@@ -168,6 +171,37 @@ public class Bayespam
             in.close();
         }
     }
+
+	///calculate class conditional probabilities for all words in vocabulary
+	private static void computeCCProbs() {
+		Multiple_Counter counter = new Multiple_Counter();
+		int nWordsRegular = 0;
+		int nWordsSpam = 0;
+
+		///count up the total words in Regular and Spam
+        for (Enumeration<String> e = vocab.keys() ; e.hasMoreElements() ;)
+        {   
+            String word;
+            
+            word = e.nextElement();
+            counter  = vocab.get(word);
+
+			nWordsRegular += counter.counter_regular;
+			nWordsSpam += counter.counter_spam;
+        }
+
+		///give each word its conditional probabilities
+		for (Enumeration<String> e = vocab.keys() ; e.hasMoreElements() ;)
+        {   
+            String word;
+            
+            word = e.nextElement();
+            counter  = vocab.get(word);
+
+			counter.probGivenRegular = (double)counter.counter_regular / nWordsRegular;
+			counter.probGivenSpam = (double)counter.counter_spam / nWordsSpam;
+        }
+	}
    
     public static void main(String[] args)
     throws IOException
@@ -192,7 +226,7 @@ public class Bayespam
         // Print out the hash table
         printVocab();
 
-        //calculates the prior probabilities
+        ///calculates the prior probabilities
         double nMessagesRegular = listing_regular.length;
         double nMessagesSpam = listing_spam.length;
         double nMessagesTotal = nMessagesRegular + nMessagesSpam;
@@ -202,6 +236,9 @@ public class Bayespam
 
         System.out.println(priorRegular);
         System.out.println(priorSpam);
+
+		///calculate class conditional probabilities
+		computeCCProbs();
         
         // Now all students must continue from here:
         //
