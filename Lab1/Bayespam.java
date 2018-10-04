@@ -41,6 +41,10 @@ public class Bayespam
 	///parameter defines the default minimum probability
 	private static double epsilon = 1;
 
+	///variables store prior probabilities of spam and regular
+	private static double logPriorRegular;
+	private static double logPriorSpam;
+
     // Listings of the two subdirectories (regular/ and spam/)
     private static File[] listing_regular = new File[0];
     private static File[] listing_spam = new File[0];
@@ -175,6 +179,57 @@ public class Bayespam
         }
     }
 
+	///Determine if a message is spam
+	private static boolean isSpam(File message) 
+	throws IOException
+	{
+		FileInputStream i_s = new FileInputStream( message );
+        BufferedReader in = new BufferedReader(new InputStreamReader(i_s));
+        String line;
+        String word;
+
+		///create a local vocabulary for words contained in the message
+		HashSet<String> messageVocab = new HashSet<String>();
+        
+
+		///read message words into local vocabulary
+        while ((line = in.readLine()) != null)                      // read a line
+        {
+            StringTokenizer st = new StringTokenizer(line);         // parse it into words
+    
+            while (st.hasMoreTokens())                  // while there are stille words left..
+            {
+                word = cleanWord(st.nextToken());
+        		if(word.length() >= 4) {
+        			if ( !vocab.contains(word) ){                  // if word doesn't yet exist in the vocab
+        		    	messageVocab.add(word);                  // add word to vocab
+        			}
+        		}
+        	}
+        }
+
+		///set the initial probabilites to the priors
+		double log_regular = logPriorRegular;
+		double log_spam = logPriorSpam;
+
+		///for all words in the message, use their conditional probabilities to update the probability of regular/spam
+		for(String w : messageVocab) {
+        	if ( vocab.containsKey(w) ){                  // if word exists already in the vocabulary..
+				Multiple_Counter counter = new Multiple_Counter();
+            	counter = vocab.get(w);                  // get the counter from the hashtable
+
+				///update probabilities with new evidence
+				log_regular += counter.logProbGivenRegular;
+				log_spam += counter.logProbGivenSpam;
+        	}
+		}
+
+		if(log_spam > log_regular) {
+			return true;
+		}
+		return false;
+	}
+
 	///calculate class conditional probabilities for all words in vocabulary
 	private static void computeCCProbs() {
 		Multiple_Counter counter = new Multiple_Counter();
@@ -242,8 +297,8 @@ public class Bayespam
         double nMessagesSpam = listing_spam.length;
         double nMessagesTotal = nMessagesRegular + nMessagesSpam;
 
-        double logPriorRegular = Math.log(nMessagesRegular / nMessagesTotal);
-        double logPriorSpam = Math.log(nMessagesSpam / nMessagesTotal);
+        logPriorRegular = Math.log(nMessagesRegular / nMessagesTotal);
+        logPriorSpam = Math.log(nMessagesSpam / nMessagesTotal);
 
         System.out.println(logPriorRegular);
         System.out.println(logPriorSpam);
