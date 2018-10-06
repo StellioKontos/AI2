@@ -160,6 +160,7 @@ public class Bayespam
         
         for (int i = 0; i < messages.length; ++i)
         {
+			///System.out.println(messages[i]);
             FileInputStream i_s = new FileInputStream( messages[i] );
             BufferedReader in = new BufferedReader(new InputStreamReader(i_s));
             String line;
@@ -177,6 +178,55 @@ public class Bayespam
 
             in.close();
         }
+    }
+
+	/// test the classifier 
+    private static void testClassifier()
+    throws IOException
+    {
+        File[] messages = new File[0];
+		int correctRegular = 0;
+		int incorrectRegular = 0;
+		int correctSpam = 0;
+		int incorrectSpam = 0;
+		boolean testingSpam;
+
+		///seperately test the classifier on regular messages and on spam messages
+		for (int i = 0; i<2; i++) {
+			if(i == 0) {
+				messages = listing_regular;
+				testingSpam = false;
+			}
+			else {
+				messages = listing_spam;
+				testingSpam = true;
+			}
+			//Goes through the list of messages and classifies each as spam or regular
+			for(int j = 0; j< messages.length; j++) {
+				boolean iAmSpam = isSpam(messages[j]);
+				if(iAmSpam) {
+					if(testingSpam) {
+						correctSpam += 1;
+					}
+					else {
+						incorrectRegular += 1;
+					}
+				}
+				else {
+					if(testingSpam) {
+						incorrectSpam += 1;
+					}
+					else { 
+						correctRegular += 1;
+					}
+				}
+			}
+		}
+        
+        System.out.println("Messages correctly identified as 'regular': " + Integer.toString(correctRegular));
+		System.out.println("Messages correctly identified as 'spam' : " + Integer.toString(correctSpam));
+		System.out.println("Messages incorrectly identified as 'regular' : " + Integer.toString(incorrectSpam));
+		System.out.println("Messages incorrectly identified as 'spam' : " + Integer.toString(incorrectRegular));
     }
 
 	///Determine if a message is spam
@@ -212,11 +262,15 @@ public class Bayespam
 		double log_regular = logPriorRegular;
 		double log_spam = logPriorSpam;
 
+		System.out.println("probs1");
+		System.out.println(log_spam);
+		System.out.println(log_regular);
+
 		///for all words in the message, use their conditional probabilities to update the probability of regular/spam
 		for(String w : messageVocab) {
         	if ( vocab.containsKey(w) ){                  // if word exists already in the vocabulary..
 				Multiple_Counter counter = new Multiple_Counter();
-            	counter = vocab.get(w);                  // get the counter from the hashtable
+            	counter = vocab.get(w);                  // get the counter from the hashtable				
 
 				///update probabilities with new evidence
 				log_regular += counter.logProbGivenRegular;
@@ -224,7 +278,10 @@ public class Bayespam
         	}
 		}
 
-		if(log_spam > log_regular) {
+		System.out.println("probs2");
+		System.out.println(log_spam);
+		System.out.println(log_regular);
+		if(log_spam >= log_regular) {
 			return true;
 		}
 		return false;
@@ -256,41 +313,48 @@ public class Bayespam
             word = e.nextElement();
             counter  = vocab.get(word);
 
-			counter.logProbGivenRegular = Math.log((double)counter.counter_regular / nWordsRegular);
-			counter.logProbGivenSpam = Math.log((double)counter.counter_spam / nWordsSpam);
+			double probGivenRegular = (double)counter.counter_regular / nWordsRegular;
+			double probGivenSpam = (double)counter.counter_spam / nWordsSpam;
 
 			///Set zero probabilities to default minimum probability
-			if(counter.logProbGivenRegular == 0) {
-				counter.logProbGivenRegular = Math.log(epsilon / (nWordsRegular + nWordsSpam));
+			if(probGivenRegular == 0) {
+				probGivenRegular = epsilon / (nWordsRegular + nWordsSpam);
 			}
-			if(counter.logProbGivenSpam == 0) {
-				counter.logProbGivenRegular = Math.log(epsilon / (nWordsRegular + nWordsSpam));
+			if(probGivenSpam == 0) {
+				probGivenSpam = epsilon / (nWordsRegular + nWordsSpam);
 			}
+			
+			if(probGivenRegular == 0 || probGivenSpam == 0) {
+				System.out.println("Je hebt het verkankered!");
+			}
+
+			counter.logProbGivenRegular = Math.log(probGivenRegular);
+			counter.logProbGivenSpam = Math.log(probGivenSpam);
         }
 	}
    
     public static void main(String[] args)
     throws IOException
     {
-        // Location of the directory (the path) taken from the cmd line (first arg)
-        File dir_location = new File( args[0] );
+        // Location of the traning directory (the path) taken from the cmd line (first arg)
+        File dir_location_train = new File( args[0] );
         
         // Check if the cmd line arg is a directory
-        if ( !dir_location.isDirectory() )
+        if ( !dir_location_train.isDirectory() )
         {
-            System.out.println( "- Error: cmd line arg not a directory.\n" );
+            System.out.println( "- Error: cmd line arg1 not a directory.\n" );
             Runtime.getRuntime().exit(0);
         }
 
         // Initialize the regular and spam lists
-        listDirs(dir_location);
+        listDirs(dir_location_train);
 
         // Read the e-mail messages
         readMessages(MessageType.NORMAL);
         readMessages(MessageType.SPAM);
 
         // Print out the hash table
-        printVocab();
+        //printVocab();
 
         ///calculates the prior probabilities
         double nMessagesRegular = listing_regular.length;
@@ -305,6 +369,23 @@ public class Bayespam
 
 		///calculate class conditional probabilities
 		computeCCProbs();
+
+		/// Location of the testing directory (the path) taken from the cmd line (second arg)
+        File dir_location_test = new File( args[1] );
+        
+        /// Check if the cmd line arg is a directory
+        if ( !dir_location_test.isDirectory() )
+        {
+            System.out.println( "- Error: cmd line arg2 not a directory.\n" );
+            Runtime.getRuntime().exit(0);
+        }
+
+		/// Initialize the regular and spam lists
+        listDirs(dir_location_test);
+
+		///classify the test set messages and print the confusion matrix
+		testClassifier();
+		
         
         // Now all students must continue from here:
         //
