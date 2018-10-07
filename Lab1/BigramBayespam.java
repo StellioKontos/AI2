@@ -1,7 +1,7 @@
 import java.io.*;
 import java.util.*;
 
-public class Bayespam
+public class BigramBayespam
 {
     // This defines the two types of messages we have.
     static enum MessageType
@@ -41,6 +41,12 @@ public class Bayespam
 	///parameter defines the default minimum probability
 	private static double epsilon = 1;
 
+	///parameter defines the minimum word length
+	private static int alpha = 4;
+
+	///parameter defines the minimum count for a bigram to be included in the vocab
+	private static int beta = 2;
+
 	///variables store prior probabilities of spam and regular
 	private static double logPriorRegular;
 	private static double logPriorSpam;
@@ -51,6 +57,23 @@ public class Bayespam
 
     // A hash table for the vocabulary (word searching is very fast in a hash table)
     private static Hashtable <String, Multiple_Counter> vocab = new Hashtable <String, Multiple_Counter> ();
+
+	private static void simplifyVocab() {
+		Multiple_Counter counter = new Multiple_Counter();
+
+        for (Enumeration<String> e = vocab.keys() ; e.hasMoreElements() ;)
+        {   
+            String bigram;
+            
+            bigram = e.nextElement();
+            counter  = vocab.get(bigram);
+            
+			int total = counter.counter_regular + counter.counter_spam;
+			if(total < beta) {
+				vocab.remove(bigram);
+			}
+        }
+	}
 
     //check if word passes filter
     private static String cleanWord(String word) {
@@ -64,24 +87,39 @@ public class Bayespam
                 finalWord += c;
             }
         }
+		if(finalWord.length() < alpha) {
+			return "";
+		}
         return finalWord;
     }
+	
+	private static String cleanLine(String line) {
+		StringTokenizer st = new StringTokenizer(line);
+		String cleanedLine = "";
+		String word;
+		String cleanedWord;
+
+		while(st.hasMoreTokens()) {
+			word = st.nextToken();
+			cleanedWord = cleanWord(word);
+			cleanedLine += cleanedWord + " ";
+		}
+		return cleanedLine;	
+	}
     
     // Add a word to the vocabulary
-    private static void addWord(String word, MessageType type)
+    private static void addBigram(String word1, String word2, MessageType type)
     {
-        word = cleanWord(word);
-        if(word.length() < 4) {
-            return;
-        }
+     
         Multiple_Counter counter = new Multiple_Counter();
+		String bigram = word1 + "-" + word2;
 
-        if ( vocab.containsKey(word) ){                  // if word exists already in the vocabulary..
-            counter = vocab.get(word);                  // get the counter from the hashtable
+        if ( vocab.containsKey(bigram) ){                  // if word exists already in the vocabulary..
+            counter = vocab.get(bigram);                  // get the counter from the hashtable
         }
         counter.incrementCounter(type);                 // increase the counter appropriately
 
-        vocab.put(word, counter);                       // put the word with its counter into the hashtable
+        vocab.put(bigram, counter);                       // put the word with its counter into the hashtable
     }
 
 
@@ -164,18 +202,35 @@ public class Bayespam
             FileInputStream i_s = new FileInputStream( messages[i] );
             BufferedReader in = new BufferedReader(new InputStreamReader(i_s));
             String line;
-            String word;
+            String word1 = "";
+			String word2;
+
+			boolean firstPass = true;								///the first token has no previous token with which to form a bigram, and forms a special case
             
             while ((line = in.readLine()) != null)                      // read a line
             {
-                StringTokenizer st = new StringTokenizer(line);         // parse it into words
-        
-                while (st.hasMoreTokens())                  // while there are stille words left..
-                {
-                    addWord(st.nextToken(), type);                  // add them to the vocabulary
-                }
-            }
+				line = cleanLine(line);									///preemptively clean the words, and remove those which are too small
 
+                StringTokenizer st = new StringTokenizer(line);         // parse it into words
+
+				///If the line contains tokens, begin searching for bigrams
+				if(st.hasMoreTokens()) {	
+					///if no first word is given from the previous line, use the first word of the line								
+					if(firstPass) {							
+						word1 = st.nextToken();
+						firstPass = false;
+					}
+					///if there are still tokens on this line, complete the bigram and add it to the vocabulary
+					while(st.hasMoreTokens()) {							
+						word2 = st.nextToken();
+						if(word1 == "") {
+							System.out.println("Je hebt het verkankered!");
+						}
+						addBigram(word1, word2, type);
+						word1 = word2;										///set the second word as the first in the next bigram
+					}
+				}
+            }
             in.close();
         }
     }
@@ -239,26 +294,40 @@ public class Bayespam
 		FileInputStream i_s = new FileInputStream( message );
         BufferedReader in = new BufferedReader(new InputStreamReader(i_s));
         String line;
-        String word;
+        String word1 = "";
+		String word2;
 
 		///create a local vocabulary for words contained in the message
 		HashSet<String> messageVocab = new HashSet<String>();
-        
 
-		///read message words into local vocabulary
+		boolean firstPass = true;								///the first token has no previous token with which to form a bigram, and forms a special case
+            
         while ((line = in.readLine()) != null)                      // read a line
         {
+			line = cleanLine(line);									///preemptively clean the words, and remove those which are too small
+
             StringTokenizer st = new StringTokenizer(line);         // parse it into words
-    
-            while (st.hasMoreTokens())                  // while there are stille words left..
-            {
-                word = cleanWord(st.nextToken());
-        		if(word.length() >= 4) {
-        			if ( !vocab.contains(word) ){                  // if word doesn't yet exist in the vocab
-        		    	messageVocab.add(word);                  // add word to vocab
+
+			///If the line contains tokens, begin searching for bigrams
+			if(st.hasMoreTokens()) {	
+				///if no first word is given from the previous line, use the first word of the line								
+				if(firstPass) {							
+					word1 = st.nextToken();
+					firstPass = false;
+				}
+				///if there are still tokens on this line, complete the bigram and add it to the vocabulary
+				while(st.hasMoreTokens()) {							
+					word2 = st.nextToken();
+					if(word1 == "") {
+						System.out.println("Je hebt het verkankered!");
+					}
+					String bigram = word1 + "-" + word2;
+					if ( !vocab.contains(bigram) ){                  /// if bigram doesn't yet exist in the vocab
+        		    	messageVocab.add(bigram);                  	/// add bigram to vocab
         			}
-        		}
-        	}
+					word1 = word2;										///set the second word as the first in the next bigram
+				}
+			}
         }
 
 		in.close();
@@ -321,10 +390,6 @@ public class Bayespam
 			if(probGivenSpam == 0) {
 				probGivenSpam = epsilon / (nWordsRegular + nWordsSpam);
 			}
-			
-			if(probGivenRegular == 0 || probGivenSpam == 0) {
-				System.out.println("Je hebt het verkankered!");
-			}
 
 			counter.logProbGivenRegular = Math.log(probGivenRegular);
 			counter.logProbGivenSpam = Math.log(probGivenSpam);
@@ -351,8 +416,11 @@ public class Bayespam
         readMessages(MessageType.NORMAL);
         readMessages(MessageType.SPAM);
 
+		/// Remove elements from the vocab with too few instances
+		simplifyVocab();
+
         // Print out the hash table
-        //printVocab();
+        printVocab();
 
         ///calculates the prior probabilities
         double nMessagesRegular = listing_regular.length;
@@ -361,9 +429,6 @@ public class Bayespam
 
         logPriorRegular = Math.log(nMessagesRegular / nMessagesTotal);
         logPriorSpam = Math.log(nMessagesSpam / nMessagesTotal);
-
-        ///System.out.println(logPriorRegular);
-        ///System.out.println(logPriorSpam);
 
 		///calculate class conditional probabilities
 		computeCCProbs();
