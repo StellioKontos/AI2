@@ -227,6 +227,9 @@ public class Bayespam
 		System.out.println("Messages correctly identified as 'spam' : " + Integer.toString(correctSpam));
 		System.out.println("Messages incorrectly identified as 'regular' : " + Integer.toString(incorrectSpam));
 		System.out.println("Messages incorrectly identified as 'spam' : " + Integer.toString(incorrectRegular));
+		System.out.print("Overal Accuracy: ");
+		double accuracy = (double)(correctRegular + correctSpam) / (correctRegular + correctSpam + incorrectRegular + incorrectSpam);
+		System.out.println(accuracy);
     }
 
 	///Determine if a message is spam
@@ -262,10 +265,6 @@ public class Bayespam
 		double log_regular = logPriorRegular;
 		double log_spam = logPriorSpam;
 
-		System.out.println("probs1");
-		System.out.println(log_spam);
-		System.out.println(log_regular);
-
 		///for all words in the message, use their conditional probabilities to update the probability of regular/spam
 		for(String w : messageVocab) {
         	if ( vocab.containsKey(w) ){                  // if word exists already in the vocabulary..
@@ -278,9 +277,6 @@ public class Bayespam
         	}
 		}
 
-		System.out.println("probs2");
-		System.out.println(log_spam);
-		System.out.println(log_regular);
 		if(log_spam >= log_regular) {
 			return true;
 		}
@@ -364,8 +360,8 @@ public class Bayespam
         logPriorRegular = Math.log(nMessagesRegular / nMessagesTotal);
         logPriorSpam = Math.log(nMessagesSpam / nMessagesTotal);
 
-        System.out.println(logPriorRegular);
-        System.out.println(logPriorSpam);
+        ///System.out.println(logPriorRegular);
+        ///System.out.println(logPriorSpam);
 
 		///calculate class conditional probabilities
 		computeCCProbs();
