@@ -41,6 +41,9 @@ public class Bayespam
 	///parameter defines the default minimum probability
 	private static double epsilon = 1;
 
+	///parameter defines the minimum word length
+	private static int alpha = 4;
+
 	///variables store prior probabilities of spam and regular
 	private static double logPriorRegular;
 	private static double logPriorSpam;
@@ -64,6 +67,9 @@ public class Bayespam
                 finalWord += c;
             }
         }
+		if(finalWord.length() < alpha) {
+			return "";
+		}
         return finalWord;
     }
     
@@ -71,7 +77,7 @@ public class Bayespam
     private static void addWord(String word, MessageType type)
     {
         word = cleanWord(word);
-        if(word.length() < 4) {
+        if(word == "") {
             return;
         }
         Multiple_Counter counter = new Multiple_Counter();
