@@ -39,10 +39,10 @@ public class BigramBayespam
     }
 
 	///parameter defines the default minimum probability
-	private static double epsilon = 1;
+	private static double epsilon = 0.01;
 
 	///parameter defines the minimum word length
-	private static int alpha = 4;
+	private static int alpha = 5;
 
 	///parameter defines the minimum count for a bigram to be included in the vocab
 	private static int beta = 2;
@@ -58,6 +58,7 @@ public class BigramBayespam
     // A hash table for the vocabulary (word searching is very fast in a hash table)
     private static Hashtable <String, Multiple_Counter> vocab = new Hashtable <String, Multiple_Counter> ();
 
+	///remove words from the vocab which occur infrequently
 	private static void simplifyVocab() {
 		Multiple_Counter counter = new Multiple_Counter();
 
@@ -70,29 +71,30 @@ public class BigramBayespam
             
 			int total = counter.counter_regular + counter.counter_spam;
 			if(total < beta) {
-				vocab.remove(bigram);
+				vocab.remove(bigram);					///if the word occurs less than the minimum (beta), remove word
 			}
         }
 	}
 
-    //check if word passes filter
+    ///check if word passes simplification filter
     private static String cleanWord(String word) {
         String finalWord = "";
         for(int i = 0; i<word.length(); i++) {
             char c = word.charAt(i);
             if(Character.isUpperCase(c)) {
-                c = Character.toLowerCase(c);
+                c = Character.toLowerCase(c);			///set everything to lowercase
             }
-            if(Character.isLetter(c)) {
+            if(Character.isLetter(c)) {					///only add letters (no number or punctuation)
                 finalWord += c;
             }
         }
-		if(finalWord.length() < alpha) {
+		if(finalWord.length() < alpha) {				///don't return words under the minimum length
 			return "";
 		}
         return finalWord;
     }
 	
+	///simplify the entire line before reading bigrams
 	private static String cleanLine(String line) {
 		StringTokenizer st = new StringTokenizer(line);
 		String cleanedLine = "";
@@ -102,24 +104,23 @@ public class BigramBayespam
 		while(st.hasMoreTokens()) {
 			word = st.nextToken();
 			cleanedWord = cleanWord(word);
-			cleanedLine += cleanedWord + " ";
+			cleanedLine += cleanedWord + " ";			///add only cleaned words to the cleaned line
 		}
 		return cleanedLine;	
 	}
     
-    // Add a word to the vocabulary
+    /// Add a bigram to the vocabulary
     private static void addBigram(String word1, String word2, MessageType type)
     {
-     
         Multiple_Counter counter = new Multiple_Counter();
 		String bigram = word1 + "-" + word2;
 
-        if ( vocab.containsKey(bigram) ){                  // if word exists already in the vocabulary..
+        if ( vocab.containsKey(bigram) ){                  /// if bigram exists already in the vocabulary..
             counter = vocab.get(bigram);                  // get the counter from the hashtable
         }
         counter.incrementCounter(type);                 // increase the counter appropriately
 
-        vocab.put(bigram, counter);                       // put the word with its counter into the hashtable
+        vocab.put(bigram, counter);                       /// put the bigram with its counter into the hashtable
     }
 
 
@@ -240,10 +241,13 @@ public class BigramBayespam
     throws IOException
     {
         File[] messages = new File[0];
+
+		///The following four variables represent the confusion matrix
 		int correctRegular = 0;
 		int incorrectRegular = 0;
 		int correctSpam = 0;
 		int incorrectSpam = 0;
+
 		boolean testingSpam;
 
 		///seperately test the classifier on regular messages and on spam messages
@@ -256,7 +260,7 @@ public class BigramBayespam
 				messages = listing_spam;
 				testingSpam = true;
 			}
-			//Goes through the list of messages and classifies each as spam or regular
+			///Goes through the list of messages and classifies each as spam or regular
 			for(int j = 0; j< messages.length; j++) {
 				boolean iAmSpam = isSpam(messages[j]);
 				if(iAmSpam) {
@@ -278,11 +282,12 @@ public class BigramBayespam
 			}
 		}
         
+		///print the confusion matrix and overall accuracy
         System.out.println("Messages correctly identified as 'regular': " + Integer.toString(correctRegular));
 		System.out.println("Messages correctly identified as 'spam' : " + Integer.toString(correctSpam));
 		System.out.println("Messages incorrectly identified as 'regular' : " + Integer.toString(incorrectSpam));
 		System.out.println("Messages incorrectly identified as 'spam' : " + Integer.toString(incorrectRegular));
-		System.out.print("Overal Accuracy: ");
+		System.out.print("Overall Accuracy: ");
 		double accuracy = (double)(correctRegular + correctSpam) / (correctRegular + correctSpam + incorrectRegular + incorrectSpam);
 		System.out.println(accuracy);
     }
@@ -322,8 +327,8 @@ public class BigramBayespam
 						System.out.println("Je hebt het verkankered!");
 					}
 					String bigram = word1 + "-" + word2;
-					if ( !vocab.contains(bigram) ){                  /// if bigram doesn't yet exist in the vocab
-        		    	messageVocab.add(bigram);                  	/// add bigram to vocab
+					if ( !messageVocab.contains(bigram) ){                  /// if bigram doesn't yet exist in the vocab
+        		    	messageVocab.add(bigram);                  		/// add bigram to vocab
         			}
 					word1 = word2;										///set the second word as the first in the next bigram
 				}
@@ -391,6 +396,7 @@ public class BigramBayespam
 				probGivenSpam = epsilon / (nWordsRegular + nWordsSpam);
 			}
 
+			///converst probabilities to log probabilities to avoid underflow
 			counter.logProbGivenRegular = Math.log(probGivenRegular);
 			counter.logProbGivenSpam = Math.log(probGivenSpam);
         }

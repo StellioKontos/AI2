@@ -39,10 +39,10 @@ public class Bayespam
     }
 
 	///parameter defines the default minimum probability
-	private static double epsilon = 1;
+	private static double epsilon = 0.001;
 
 	///parameter defines the minimum word length
-	private static int alpha = 4;
+	private static int alpha = 6;
 
 	///variables store prior probabilities of spam and regular
 	private static double logPriorRegular;
@@ -55,19 +55,19 @@ public class Bayespam
     // A hash table for the vocabulary (word searching is very fast in a hash table)
     private static Hashtable <String, Multiple_Counter> vocab = new Hashtable <String, Multiple_Counter> ();
 
-    //check if word passes filter
+    ///check if word passes simplification filter
     private static String cleanWord(String word) {
         String finalWord = "";
         for(int i = 0; i<word.length(); i++) {
             char c = word.charAt(i);
             if(Character.isUpperCase(c)) {
-                c = Character.toLowerCase(c);
+                c = Character.toLowerCase(c);			///set everything to lowercase
             }
-            if(Character.isLetter(c)) {
+            if(Character.isLetter(c)) {					///only add letters (no number or punctuation)
                 finalWord += c;
             }
         }
-		if(finalWord.length() < alpha) {
+		if(finalWord.length() < alpha) {				///don't return words under the minimum length
 			return "";
 		}
         return finalWord;
@@ -76,8 +76,8 @@ public class Bayespam
     // Add a word to the vocabulary
     private static void addWord(String word, MessageType type)
     {
-        word = cleanWord(word);
-        if(word == "") {
+        word = cleanWord(word);							///pass word through a simplification algorithm
+        if(word == "") {								///if no word is returned, no new word is added
             return;
         }
         Multiple_Counter counter = new Multiple_Counter();
@@ -191,10 +191,13 @@ public class Bayespam
     throws IOException
     {
         File[] messages = new File[0];
+
+		///the following four variables represent the confusion matrix
 		int correctRegular = 0;
 		int incorrectRegular = 0;
 		int correctSpam = 0;
 		int incorrectSpam = 0;
+
 		boolean testingSpam;
 
 		///seperately test the classifier on regular messages and on spam messages
@@ -207,7 +210,7 @@ public class Bayespam
 				messages = listing_spam;
 				testingSpam = true;
 			}
-			//Goes through the list of messages and classifies each as spam or regular
+			///Goes through the list of messages and classifies each as spam or regular
 			for(int j = 0; j< messages.length; j++) {
 				boolean iAmSpam = isSpam(messages[j]);
 				if(iAmSpam) {
@@ -229,6 +232,7 @@ public class Bayespam
 			}
 		}
         
+		///print the confusion matrix and the overall accuracy
         System.out.println("Messages correctly identified as 'regular': " + Integer.toString(correctRegular));
 		System.out.println("Messages correctly identified as 'spam' : " + Integer.toString(correctSpam));
 		System.out.println("Messages incorrectly identified as 'regular' : " + Integer.toString(incorrectSpam));
@@ -259,9 +263,9 @@ public class Bayespam
             while (st.hasMoreTokens())                  // while there are stille words left..
             {
                 word = cleanWord(st.nextToken());
-        		if(word.length() >= 4) {
-        			if ( !vocab.contains(word) ){                  // if word doesn't yet exist in the vocab
-        		    	messageVocab.add(word);                  // add word to vocab
+        		if(word.length() >= alpha) {
+        			if ( messageVocab.contains(word) == false){          // if word doesn't yet exist in the vocab
+        		    	messageVocab.add(word);                  		// add word to vocab
         			}
         		}
         	}
@@ -275,6 +279,7 @@ public class Bayespam
 
 		///for all words in the message, use their conditional probabilities to update the probability of regular/spam
 		for(String w : messageVocab) {
+
         	if ( vocab.containsKey(w) ){                  // if word exists already in the vocabulary..
 				Multiple_Counter counter = new Multiple_Counter();
             	counter = vocab.get(w);                  // get the counter from the hashtable				
@@ -327,11 +332,8 @@ public class Bayespam
 			if(probGivenSpam == 0) {
 				probGivenSpam = epsilon / (nWordsRegular + nWordsSpam);
 			}
-			
-			if(probGivenRegular == 0 || probGivenSpam == 0) {
-				System.out.println("Je hebt het verkankered!");
-			}
 
+			///converst probabilities to log probabilities to avoid underflow
 			counter.logProbGivenRegular = Math.log(probGivenRegular);
 			counter.logProbGivenSpam = Math.log(probGivenSpam);
         }
@@ -358,7 +360,7 @@ public class Bayespam
         readMessages(MessageType.SPAM);
 
         // Print out the hash table
-        //printVocab();
+        printVocab();
 
         ///calculates the prior probabilities
         double nMessagesRegular = listing_regular.length;
@@ -367,9 +369,6 @@ public class Bayespam
 
         logPriorRegular = Math.log(nMessagesRegular / nMessagesTotal);
         logPriorSpam = Math.log(nMessagesSpam / nMessagesTotal);
-
-        ///System.out.println(logPriorRegular);
-        ///System.out.println(logPriorSpam);
 
 		///calculate class conditional probabilities
 		computeCCProbs();
