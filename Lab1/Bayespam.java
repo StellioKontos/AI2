@@ -260,7 +260,7 @@ public class Bayespam
         {
             StringTokenizer st = new StringTokenizer(line);         // parse it into words
     
-            while (st.hasMoreTokens())                  // while there are stille words left..
+            while (st.hasMoreTokens())                  // while there are still words left..
             {
                 word = cleanWord(st.nextToken());
         		if(word.length() >= alpha) {
@@ -302,7 +302,7 @@ public class Bayespam
 		int nWordsRegular = 0;
 		int nWordsSpam = 0;
 
-		///count up the total words in Regular and Spam
+		///count up the total word counts in Regular and Spam
         for (Enumeration<String> e = vocab.keys() ; e.hasMoreElements() ;)
         {   
             String word;
@@ -333,7 +333,7 @@ public class Bayespam
 				probGivenSpam = epsilon / (nWordsRegular + nWordsSpam);
 			}
 
-			///converst probabilities to log probabilities to avoid underflow
+			///convert probabilities to log probabilities to avoid underflow
 			counter.logProbGivenRegular = Math.log(probGivenRegular);
 			counter.logProbGivenSpam = Math.log(probGivenSpam);
         }
