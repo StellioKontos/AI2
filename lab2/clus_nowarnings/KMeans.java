@@ -1,4 +1,6 @@
 import java.util.*;
+import java.util.Random;
+import java.lang.*;
 
 public class KMeans extends ClusteringAlgorithm
 {
@@ -53,16 +55,107 @@ public class KMeans extends ClusteringAlgorithm
 			clusters[ic] = new Cluster();
 	}
 
+	///Initialize the prototypes with random values
+	private void initPrototypes() {
+		Random r = new Random();
+		for(int i = 0; i < k; i++) {
+			float[] p = new float[dim];
+			for(int j = 0; j < dim; j++) {
+				p[j] = r.nextFloat();
+			}
+			clusters[i].prototype = p;
+		}
+	}
+
+	///calculate the Euclidian distance
+	private double measureEuclidian(float[] a, float[] b) {
+		double eucSquared = 0;
+		for(int i = 0; i<dim; i++) {
+			eucSquared += (a[i] - b[i]) * (a[i] - b[i]);
+		}
+		return Math.sqrt(eucSquared);
+	}
+
+	///Assign each datapoint to the closest prototype
+	private void generatePartition() {
+		for(int i = 0; i<k; i++) {
+			///move members from current set to previous set
+			clusters[i].previousMembers = new HashSet<Integer>(clusters[i].currentMembers);
+
+			///make a new empty current members set
+			clusters[i].currentMembers = new HashSet<Integer>();
+		}
+		///iterate over all training data and assign each datapoint to a cluster
+		for(int i = 0; i<trainData.size(); i++) {
+			int closestCluster = 0;
+			double minDist = 99999999;
+			///for each cluster, calculate the distance, and determine if it is the current minimum
+			for(int j = 0; j<k; j++) {
+				double dist = measureEuclidian(trainData.get(i), clusters[j].prototype);
+				if(dist < minDist) {
+					minDist = dist;
+					closestCluster = j;
+				}
+			}
+			clusters[closestCluster].currentMembers.add(i);
+		}
+	}
+
+	///Calculate the cluster center based on its members
+	private void calculatePrototypes() {
+		for(int i = 0; i<k; i++) {
+			float[] newPrototype = new float[dim]; 						///generate new empty prototype
+			for(int j : clusters[i].currentMembers) {
+				///add the member's vector to the prototype
+				for(int m = 0; m<dim; m++) {
+					newPrototype[m] += trainData.get(j)[m];
+				}
+			}
+			///divide the sum to achieve the average
+			for(int j = 0; j<dim; j++) {
+				newPrototype[j] /= clusters[i].currentMembers.size();
+			}
+			clusters[i].prototype = newPrototype;
+		}
+	}
+
+
+	///check if training finished
+	private boolean amIDoneYet() {
+		for(int i = 0; i<k; i++) {
+			for(int j : clusters[i].currentMembers) {
+				if(!clusters[i].previousMembers.contains(j)) {
+					return false;
+				}
+			}
+		}
+		return true;
+	}
+
 
 	public boolean train()
 	{
-	 	//implement k-means algorithm here:
-		// Step 1: Select an initial random partioning with k clusters
-		// Step 2: Generate a new partition by assigning each datapoint to its closest cluster center
-		// Step 3: recalculate cluster centers
-		// Step 4: repeat until clustermembership stabilizes
+		///Select an initial random partitioning
+		initPrototypes();
+		
+		boolean done = false;
+		int iter = 1;
+		while(!done) {
+			System.out.println("Iteration: " + iter);
 
-		KMeans(2, trainData, testData, 21000);
+			generatePartition();	///put each datapoint in a cluster
+			
+			calculatePrototypes();	///calculate centers of each cluster
+
+			for(int i = 0; i<k; i++) {
+				System.out.println("Cluster "+ i +" has " + clusters[i].currentMembers.size() + " many members");
+			}
+	
+			///check if the clusters have stabilized
+			done = amIDoneYet();
+
+			iter++;
+		}
 
 		return false;
 	}
@@ -77,6 +170,8 @@ public class KMeans extends ClusteringAlgorithm
 		// count number of hits
 		// count number of requests
 		// set the global variables hitrate and accuracy to their appropriate value
+		
+
 		return true;
 	}
 
