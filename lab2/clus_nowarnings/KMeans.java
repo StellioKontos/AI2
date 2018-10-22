@@ -79,7 +79,7 @@ public class KMeans extends ClusteringAlgorithm
 	///Assign each datapoint to the closest prototype
 	private void generatePartition(boolean test) {
 
-		//the boolean 'test' allows us to generate a partition from either the training set or the testing set
+		///the boolean 'test' allows us to generate a partition from either the training set or the testing set
 		Vector<float[]> data;
 		if(test) {
 			data = testData;
@@ -87,7 +87,6 @@ public class KMeans extends ClusteringAlgorithm
 		else {
 			data = trainData;
 		}		
-
 
 		for(int i = 0; i<k; i++) {
 			///move members from current set to previous set
@@ -132,8 +131,7 @@ public class KMeans extends ClusteringAlgorithm
 
 
 	///check if training finished
-	private boolean amIDoneYet() {
-		Random r = new Random();
+	private boolean amIDoneYet() {;
 		for(int i = 0; i<k; i++) {
 			for(int j : clusters[i].currentMembers) {
 				if(!clusters[i].previousMembers.contains(j)) {
