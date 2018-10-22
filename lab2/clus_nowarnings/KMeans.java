@@ -167,14 +167,13 @@ public class KMeans extends ClusteringAlgorithm
 
 	public boolean test()
 	{
-
 		int totalHits = 0;
 		int totalRequests = 0;
 		int totalPrefetched = 0;
 
 		generatePartition(true);		///partition the testing data
 
-		///for every element count requets, prefetches and hits
+		///for every element count requests, prefetches and hits
 		for(int i = 0; i<k; i++) {
 			for(int m : clusters[i].currentMembers) {
 				for(int j = 0; j<dim; j++) {
@@ -191,7 +190,6 @@ public class KMeans extends ClusteringAlgorithm
 
 		hitrate = (double)(totalHits)/totalRequests;
 		accuracy = (double)(totalHits)/totalPrefetched;	
-
 		return true;
 	}
 
