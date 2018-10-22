@@ -146,14 +146,12 @@ public class KMeans extends ClusteringAlgorithm
 	{
 		///Select an initial random partitioning
 		initPrototypes();
-		
 		boolean done = false;
 		int iter = 1;
 		while(!done) {
 			System.out.println("Iteration: " + iter);
 
 			generatePartition(false);	///put each datapoint in a cluster
-			
 			calculatePrototypes();	///calculate centers of each cluster
 
 			for(int i = 0; i<k; i++) {
@@ -162,11 +160,8 @@ public class KMeans extends ClusteringAlgorithm
 
 			///check if the clusters have stabilized
 			done = amIDoneYet();
-
-
 			iter++;
 		}
-
 		return false;
 	}
 
