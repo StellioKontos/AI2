@@ -90,6 +90,7 @@ public class Kohonen extends ClusteringAlgorithm
 			System.out.println("Progress: " + i + "/" + epochs);
 			double learningRate = initialLearningRate*(1.0 - (double)i / epochs);
 			double r = n * (1.0 - (double)i / epochs) / 2;
+			///loop over all training data
 			for(int j = 0; j<trainData.size(); j++) {
 				int bestX = 0;
 				int bestY = 0;
@@ -123,7 +124,6 @@ public class Kohonen extends ClusteringAlgorithm
 	
 	public boolean test()
 	{
-
 		///iterate over all training data and assign each datapoint to a cluster
 		for(int i = 0; i<trainData.size(); i++) {
 			int closestX = 0;
@@ -143,7 +143,7 @@ public class Kohonen extends ClusteringAlgorithm
 			clusters[closestX][closestY].currentMembers.add(i);
 		}
 
-
+		///count the total number of hits, requests, and prefetched urls below
 		int totalHits = 0;
 		int totalRequests = 0;
 		int totalPrefetched = 0;
