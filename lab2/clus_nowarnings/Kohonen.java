@@ -1,4 +1,5 @@
 import java.util.*;
+import java.lang.*;
 
 public class Kohonen extends ClusteringAlgorithm
 {
@@ -58,33 +59,114 @@ public class Kohonen extends ClusteringAlgorithm
 			for (int i2 = 0; i2 < n; i2++) {
 				clusters[i][i2] = new Cluster();
 				clusters[i][i2].prototype = new float[dim];
+				for(int i3 = 0; i3<dim; i3++) {
+					clusters[i][i2].prototype[i3] = rnd.nextFloat();
+				}
 			}
+		}
+	}
+
+	///calculate the Euclidian distance
+	private double measureEuclidian(float[] a, float[] b) {
+		double eucSquared = 0;
+		for(int i = 0; i<dim; i++) {
+			eucSquared += (a[i] - b[i]) * (a[i] - b[i]);
+		}
+		return Math.sqrt(eucSquared);
+	}
+
+	///move a given unit towards the input vector
+	private void moveUnit(int x, int y, double learningRate, float[] input) {
+		for(int i = 0; i<dim; i++) {
+			clusters[x][y].prototype[i] *= (1-learningRate);
+			clusters[x][y].prototype[i] += learningRate*input[i];
 		}
 	}
 
 	
 	public boolean train()
 	{
-		// Step 1: initialize map with random vectors (A good place to do this, is in the initialisation of the clusters)
-		// Repeat 'epochs' times:
-			// Step 2: Calculate the squareSize and the learningRate, these decrease lineary with the number of epochs.
-			// Step 3: Every input vector is presented to the map (always in the same order)
-			// For each vector its Best Matching Unit is found, and :
-				// Step 4: All nodes within the neighbourhood of the BMU are changed, you don't have to use distance relative learning.
-		// Since training kohonen maps can take quite a while, presenting the user with a progress bar would be nice
+		for(int i = 0; i<epochs; i++) {
+			System.out.println("Progress: " + i + "/" + epochs);
+			double learningRate = initialLearningRate*(1.0 - (double)i / epochs);
+			double r = n * (1.0 - (double)i / epochs) / 2;
+			for(int j = 0; j<trainData.size(); j++) {
+				int bestX = 0;
+				int bestY = 0;
+				double minDist = 999999;
+
+				///find the Best Matching Unit
+				for(int x = 0; x<n; x++) {
+					for(int y = 0; y<n; y++) {
+						double dist = measureEuclidian(clusters[x][y].prototype, trainData.get(j));
+						if(dist < minDist) {
+							bestX = x;
+							bestY = y;
+							minDist = dist;
+						}
+					}
+				}
+				
+				///move all nodes within the neighbourhood
+				for(int x = 0; x<n; x++) {
+					for(int y = 0; y<n; y++) {
+						double dist = Math.abs(x - bestX) + Math.abs(y-bestY);
+						if(dist <= r) {
+							moveUnit(x, y, learningRate, trainData.get(j));
+						}
+					}
+				}
+			}
+		}
 		return true;
 	}
 	
 	public boolean test()
 	{
-		// iterate along all clients
-		// for each client find the cluster of which it is a member
-		// get the actual testData (the vector) of this client
-		// iterate along all dimensions
-		// and count prefetched htmls
-		// count number of hits
-		// count number of requests
-		// set the global variables hitrate and accuracy to their appropriate value
+
+		///iterate over all training data and assign each datapoint to a cluster
+		for(int i = 0; i<trainData.size(); i++) {
+			int closestX = 0;
+			int closestY = 0;
+			double minDist = 99999999;
+			///for each cluster, calculate the distance, and determine if it is the current minimum
+			for(int x = 0; x<n; x++) {
+				for(int y = 0; y<n; y++) {
+					double dist = measureEuclidian(trainData.get(i), clusters[x][y].prototype);
+					if(dist < minDist) {
+						minDist = dist;
+						closestX = x;
+						closestY = y;
+					}
+				}
+			}
+			clusters[closestX][closestY].currentMembers.add(i);
+		}
+
+
+		int totalHits = 0;
+		int totalRequests = 0;
+		int totalPrefetched = 0;
+
+		///for every element count requets, prefetches and hits
+		for(int x = 0; x<n; x++) {
+			for(int y = 0; y<n; y++) {
+				for(int m : clusters[x][y].currentMembers) {
+					for(int j = 0; j<dim; j++) {
+						boolean pref = false;
+						boolean requ = false;
+						if(testData.get(m)[j] == 1) requ = true;
+						if(clusters[x][y].prototype[j] >= prefetchThreshold) pref = true;
+						if(requ) totalRequests++; 
+						if(pref) totalPrefetched++;
+						if(requ && pref) totalHits++;
+					}
+				}
+			}
+		}
+
+		hitrate = (double)(totalHits)/totalRequests;
+		accuracy = (double)(totalHits)/totalPrefetched;
 		return true;
 	}
 

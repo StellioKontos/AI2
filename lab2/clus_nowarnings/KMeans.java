@@ -77,7 +77,18 @@ public class KMeans extends ClusteringAlgorithm
 	}
 
 	///Assign each datapoint to the closest prototype
-	private void generatePartition() {
+	private void generatePartition(boolean test) {
+
+		//the boolean 'test' allows us to generate a partition from either the training set or the testing set
+		Vector<float[]> data;
+		if(test) {
+			data = testData;
+		}
+		else {
+			data = trainData;
+		}		
+
+
 		for(int i = 0; i<k; i++) {
 			///move members from current set to previous set
 			clusters[i].previousMembers = new HashSet<Integer>(clusters[i].currentMembers);
@@ -86,12 +97,12 @@ public class KMeans extends ClusteringAlgorithm
 			clusters[i].currentMembers = new HashSet<Integer>();
 		}
 		///iterate over all training data and assign each datapoint to a cluster
-		for(int i = 0; i<trainData.size(); i++) {
+		for(int i = 0; i<data.size(); i++) {
 			int closestCluster = 0;
 			double minDist = 99999999;
 			///for each cluster, calculate the distance, and determine if it is the current minimum
 			for(int j = 0; j<k; j++) {
-				double dist = measureEuclidian(trainData.get(i), clusters[j].prototype);
+				double dist = measureEuclidian(data.get(i), clusters[j].prototype);
 				if(dist < minDist) {
 					minDist = dist;
 					closestCluster = j;
@@ -122,6 +133,7 @@ public class KMeans extends ClusteringAlgorithm
 
 	///check if training finished
 	private boolean amIDoneYet() {
+		Random r = new Random();
 		for(int i = 0; i<k; i++) {
 			for(int j : clusters[i].currentMembers) {
 				if(!clusters[i].previousMembers.contains(j)) {
@@ -131,7 +143,6 @@ public class KMeans extends ClusteringAlgorithm
 		}
 		return true;
 	}
-
 
 	public boolean train()
 	{
@@ -143,16 +154,17 @@ public class KMeans extends ClusteringAlgorithm
 		while(!done) {
 			System.out.println("Iteration: " + iter);
 
-			generatePartition();	///put each datapoint in a cluster
+			generatePartition(false);	///put each datapoint in a cluster
 			
 			calculatePrototypes();	///calculate centers of each cluster
 
 			for(int i = 0; i<k; i++) {
 				System.out.println("Cluster "+ i +" has " + clusters[i].currentMembers.size() + " many members");
 			}
-	
+
 			///check if the clusters have stabilized
 			done = amIDoneYet();
+
 
 			iter++;
 		}
@@ -162,15 +174,30 @@ public class KMeans extends ClusteringAlgorithm
 
 	public boolean test()
 	{
-		// iterate along all clients. Assumption: the same clients are in the same order as in the testData
-		// for each client find the cluster of which it is a member
-		// get the actual testData (the vector) of this client
-		// iterate along all dimensions
-		// and count prefetched htmls
-		// count number of hits
-		// count number of requests
-		// set the global variables hitrate and accuracy to their appropriate value
-		
+
+		int totalHits = 0;
+		int totalRequests = 0;
+		int totalPrefetched = 0;
+
+		generatePartition(true);		///partition the testing data
+
+		///for every element count requets, prefetches and hits
+		for(int i = 0; i<k; i++) {
+			for(int m : clusters[i].currentMembers) {
+				for(int j = 0; j<dim; j++) {
+					boolean pref = false;
+					boolean requ = false;
+					if(testData.get(m)[j] == 1) requ = true;
+					if(clusters[i].prototype[j] >= prefetchThreshold) pref = true;
+					if(requ) totalRequests++; 
+					if(pref) totalPrefetched++;
+					if(requ && pref) totalHits++;
+				}
+			}
+		}
+
+		hitrate = (double)(totalHits)/totalRequests;
+		accuracy = (double)(totalHits)/totalPrefetched;	
 
 		return true;
 	}
